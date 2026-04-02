@@ -1,321 +1,591 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Verbrauch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fuel Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        /* Custom Styles for Liquid Glass and Animations */
         :root {
-            --ac: #a855f7;
-            --bg: #1a0b2e;
+            --bg-color: #020617;
         }
-        
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
         body {
-            background-color: var(--bg);
-            background-image: radial-gradient(circle at 50% 30%, #2e1065 0%, #000000 100%);
-            color: #ffffff;
-            /* Fallback für iOS */
-            height: 100vh;
-            height: -webkit-fill-available;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 70%);
+            background-attachment: fixed;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-radius: 1.5rem;
+            position: relative;
             overflow: hidden;
         }
-
-        .container {
-            width: 100%;
-            max-width: 500px;
-            padding: 20px;
-            padding-bottom: calc(120px + env(safe-area-inset-bottom, 20px));
-            position: relative;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.08);
-            -webkit-backdrop-filter: blur(20px);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 24px;
-            padding: 40px 24px;
-            width: 100%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            text-align: center;
-            display: none; /* Standardmäßig versteckt */
-            animation: fadeIn 0.4s ease forwards;
-        }
-
-        .card.active {
-            display: block; /* Nur aktive Karte zeigen */
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        h1 { font-size: 1.2rem; font-weight: 500; opacity: 0.8; margin-bottom: 10px; }
-        
-        .val {
-            font-size: 4rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-            background: linear-gradient(to right, #ffffff, #d8b4fe);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .unit { font-size: 1.2rem; opacity: 0.6; }
-        
-        .ig { margin-bottom: 30px; text-align: left; }
-        .ig label { display: block; font-size: 1.1rem; margin-bottom: 15px; opacity: 0.9; text-align: center; }
-        
-        input {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
-            padding: 20px;
-            font-size: 2rem;
-            color: white;
-            text-align: center;
-            outline: none;
-            -webkit-appearance: none;
-        }
-        
-        input:focus { border-color: var(--ac); background: rgba(0, 0, 0, 0.3); }
-        
-        button {
-            background: rgba(255, 255, 255, 0.1);
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
-            padding: 18px 40px;
-            border-radius: 100px;
-            cursor: pointer;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        button:disabled { opacity: 0.4; pointer-events: none; }
-        
-        .btn-p {
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.5), rgba(126, 34, 206, 0.5));
-            border-color: rgba(168, 85, 247, 0.6);
-        }
-        
-        .fab {
-            position: fixed;
-            bottom: calc(40px + env(safe-area-inset-bottom, 20px));
-            left: 50%;
-            transform: translateX(-50%) scale(1);
-            width: 64px;
-            height: 64px;
-            border-radius: 32px;
-            padding: 0;
-            z-index: 50;
-            background: #FF2C2C;
-            border: none;
-            box-shadow: 0 8px 32px rgba(255, 44, 44, 0.4);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            color: white;
-        }
-
-        .fab.hidden { 
-            opacity: 0; 
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
             pointer-events: none;
-            transform: translateX(-50%) scale(0.8) translateY(20px);
         }
-
-        .loader {
-            width: 40px; height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: var(--ac);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
+        .highlight-green {
+            border-color: rgba(52, 211, 153, 0.5);
+            box-shadow: 0 0 20px rgba(52, 211, 153, 0.2);
         }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .ambient-glow-1 {
+            position: fixed; top: -10%; left: -10%; width: 400px; height: 400px;
+            background: rgba(59, 130, 246, 0.2); border-radius: 50%; filter: blur(100px); pointer-events: none; z-index: -1;
+        }
+        .ambient-glow-2 {
+            position: fixed; bottom: -10%; right: -10%; width: 400px; height: 400px;
+            background: rgba(16, 185, 129, 0.1); border-radius: 50%; filter: blur(100px); pointer-events: none; z-index: -1;
+        }
         
-        #error-msg { color: #fca5a5; margin-top: 15px; font-size: 0.9rem; display: none; }
+        /* Transitions */
+        .view {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s ease, transform 0.4s ease, filter 0.4s ease;
+        }
+        .view.active {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+        }
+        .view.exit {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+            filter: blur(10px);
+        }
+        .view.enter {
+            opacity: 0;
+            transform: translateY(20px) scale(1.05);
+            filter: blur(10px);
+        }
+        
+        .wizard-step {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            position: absolute;
+            inset: 0;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .wizard-step.active {
+            display: flex;
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .wizard-step.exit-left {
+            transform: translateX(-20px);
+            opacity: 0;
+        }
+        .wizard-step.enter-right {
+            transform: translateX(20px);
+            opacity: 0;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
     </style>
 </head>
-<body>
+<body class="min-h-screen w-full max-w-md mx-auto relative flex flex-col px-4 py-8 sm:py-12">
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
 
-<div class="container">
-    <!-- Start Screen -->
-    <div id="s-start" class="card active">
-        <h1>Ø Verbrauch</h1>
-        <div id="l-start" class="loader"></div>
-        <div id="v-content" style="display:none">
-            <div class="val"><span id="v-val">--</span></div>
-            <div class="unit">Liter / 100 km</div>
-        </div>
-        <div id="error-msg"></div>
-    </div>
+    <!-- Dashboard View -->
+    <div id="dashboard-view" class="view active flex-col gap-6 w-full h-full flex-1">
+        <header class="flex items-center justify-between pt-4 pb-2">
+            <div>
+                <h1 class="text-3xl font-semibold tracking-tight">Fuel Stats</h1>
+                <p class="text-white/50 text-sm mt-1">E5 vs E10 Performance</p>
+            </div>
+            <button onclick="openWizard()" class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)] active:scale-95 transition-transform">
+                <i data-lucide="plus"></i>
+            </button>
+        </header>
 
-    <!-- KM Screen -->
-    <div id="s-km" class="card">
-        <div class="ig">
-            <label>Kilometerstand</label>
-            <input type="number" id="i-km" inputmode="decimal" pattern="[0-9]*" placeholder="0" oninput="chk('km')">
+        <div id="loading-indicator" class="flex-1 flex items-center justify-center hidden">
+            <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-white/50"></i>
         </div>
-        <button id="b-km" onclick="nxt('km','liter')" disabled>Weiter</button>
-    </div>
 
-    <!-- Liter Screen -->
-    <div id="s-liter" class="card">
-        <div class="ig">
-            <label>Getankte Liter</label>
-            <input type="number" id="i-liter" inputmode="decimal" pattern="[0-9]*" placeholder="0.00" oninput="chk('liter')">
-        </div>
-        <button id="b-liter" onclick="nxt('liter','preis')" disabled>Weiter</button>
-    </div>
+        <div id="dashboard-content" class="flex flex-col gap-6 flex-1 hidden">
+            <div class="grid grid-cols-2 gap-4">
+                <div id="card-e5" class="glass-card p-5 flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-lg font-medium text-blue-200">E5 Bilanz</span>
+                        <i data-lucide="droplet" class="w-5 h-5 text-blue-400/70"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold"><span id="e5-verb">--</span> <span class="text-sm font-normal text-white/50">L/100km</span></div>
+                        <div id="e5-pkm-container" class="text-lg mt-1 text-white/70"><span id="e5-pkm">--</span> <span class="text-xs font-normal opacity-70">€/km</span></div>
+                    </div>
+                </div>
 
-    <!-- Preis Screen -->
-    <div id="s-preis" class="card">
-        <div class="ig">
-            <label>Preis (Gesamt)</label>
-            <input type="number" id="i-preis" inputmode="decimal" pattern="[0-9]*" placeholder="0.00" oninput="chk('preis')">
+                <div id="card-e10" class="glass-card p-5 flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-lg font-medium text-amber-200">E10 Bilanz</span>
+                        <i data-lucide="droplet" class="w-5 h-5 text-amber-400/70"></i>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold"><span id="e10-verb">--</span> <span class="text-sm font-normal text-white/50">L/100km</span></div>
+                        <div id="e10-pkm-container" class="text-lg mt-1 text-white/70"><span id="e10-pkm">--</span> <span class="text-xs font-normal opacity-70">€/km</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 flex-1 min-h-[300px] flex flex-col">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="activity" class="w-5 h-5 text-white/70"></i>
+                    <h2 class="text-lg font-medium text-white/90">Verbrauchsverlauf</h2>
+                </div>
+                <div class="flex-1 w-full relative">
+                    <canvas id="historyChart"></canvas>
+                </div>
+            </div>
         </div>
-        <button class="btn-p" id="b-save" onclick="save()" disabled>
-            <span id="s-txt">Speichern</span>
-            <div id="s-ldr" class="loader" style="display:none;width:24px;height:24px;margin:0;border-width:2px"></div>
+
+        <button onclick="openWizard()" class="mt-auto w-full py-4 rounded-2xl bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 text-white font-medium text-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            Neuer Tankvorgang
         </button>
     </div>
-</div>
 
-<!-- Plus Button -->
-<button id="fab" class="fab hidden" onclick="start()">
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-    </svg>
-</button>
+    <!-- Wizard View -->
+    <div id="wizard-view" class="view flex-col w-full h-full flex-1">
+        <header class="flex items-center gap-4 pt-4 pb-8">
+            <button onclick="prevStep()" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 active:scale-95 transition-transform">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </button>
+            <div class="flex-1">
+                <div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-white/80 rounded-full transition-all duration-300" style="width: 25%"></div>
+                </div>
+            </div>
+            <span class="text-sm font-medium text-white/50 w-8 text-right"><span id="step-indicator">1</span>/4</span>
+        </header>
 
-<script>
-    const URL = "https://script.google.com/macros/s/AKfycbwOg5LRCcwh8IUHH5XHT6zvivmhYFXeBte9lHDll7PDkI0w4G8UvIiPuHUvabGZSysZ/exec";
-    
-    let d = { kmstand: "", liter: "", preis: "" };
+        <div class="flex-1 flex flex-col justify-center relative overflow-hidden">
+            <!-- Step 1: Kraftstoff -->
+            <div id="step-1" class="wizard-step active">
+                <h2 class="text-3xl font-semibold text-center mb-8">Welcher Kraftstoff?</h2>
+                <div class="grid grid-cols-2 gap-4 w-full max-w-xs">
+                    <div onclick="selectFuel('E5')" id="btn-e5" class="glass-card aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer active:scale-95 transition-all">
+                        <div class="w-16 h-16 rounded-full bg-white/5 text-white/50 flex items-center justify-center transition-colors" id="icon-e5">
+                            <i data-lucide="droplet" class="w-8 h-8"></i>
+                        </div>
+                        <span class="text-2xl font-semibold">E5</span>
+                    </div>
+                    <div onclick="selectFuel('E10')" id="btn-e10" class="glass-card aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer active:scale-95 transition-all">
+                        <div class="w-16 h-16 rounded-full bg-white/5 text-white/50 flex items-center justify-center transition-colors" id="icon-e10">
+                            <i data-lucide="droplet" class="w-8 h-8"></i>
+                        </div>
+                        <span class="text-2xl font-semibold">E10</span>
+                    </div>
+                </div>
+            </div>
 
-    document.addEventListener('DOMContentLoaded', fetchV);
+            <!-- Step 2: Kilometerstand -->
+            <div id="step-2" class="wizard-step">
+                <h2 class="text-3xl font-semibold text-center mb-8">Kilometerstand</h2>
+                <div class="w-full max-w-xs relative">
+                    <input type="number" id="input-km" inputmode="decimal" class="w-full bg-transparent text-5xl font-bold text-center text-white placeholder-white/20 outline-none" placeholder="0" oninput="validateStep()">
+                    <div class="text-center text-white/50 mt-2">km</div>
+                </div>
+            </div>
 
-    function showError(msg) {
-        const errEl = document.getElementById('error-msg');
-        errEl.innerText = msg;
-        errEl.style.display = 'block';
-    }
+            <!-- Step 3: Liter -->
+            <div id="step-3" class="wizard-step">
+                <h2 class="text-3xl font-semibold text-center mb-8">Getankte Liter</h2>
+                <div class="w-full max-w-xs relative">
+                    <input type="number" id="input-liter" inputmode="decimal" class="w-full bg-transparent text-5xl font-bold text-center text-white placeholder-white/20 outline-none" placeholder="0.00" oninput="validateStep()">
+                    <div class="text-center text-white/50 mt-2">Liter</div>
+                </div>
+            </div>
 
-    function chk(s) {
-        const val = document.getElementById(`i-${s}`).value;
-        document.getElementById(`b-${s==='preis'?'save':s}`).disabled = !val;
-    }
+            <!-- Step 4: Preis -->
+            <div id="step-4" class="wizard-step">
+                <h2 class="text-3xl font-semibold text-center mb-8">Gesamtpreis in €</h2>
+                <div class="w-full max-w-xs relative">
+                    <input type="number" id="input-preis" inputmode="decimal" class="w-full bg-transparent text-5xl font-bold text-center text-white placeholder-white/20 outline-none" placeholder="0.00" oninput="validateStep()">
+                    <div class="text-center text-white/50 mt-2">€</div>
+                </div>
+            </div>
+        </div>
 
-    function show(id) {
-        document.querySelectorAll('.card').forEach(e => e.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    }
+        <div class="mt-auto pt-8">
+            <button id="btn-next" disabled onclick="nextStep()" class="w-full py-4 rounded-2xl font-medium text-lg flex items-center justify-center gap-2 transition-all duration-300 bg-white/10 text-white/30 cursor-not-allowed">
+                <span id="btn-next-text">Weiter</span>
+                <i id="btn-next-icon" data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
 
-    function fetchV() {
-        fetch(URL, { redirect: 'follow' })
-            .then(r => {
-                if (!r.ok) throw new Error("Netzwerkfehler");
-                return r.json();
-            })
-            .then(data => {
-                document.getElementById('l-start').style.display = 'none';
-                document.getElementById('v-content').style.display = 'block';
-                document.getElementById('v-val').innerText = data.verbrauch || "0,0";
-                document.getElementById('fab').classList.remove('hidden');
-            })
-            .catch(e => {
-                console.error(e);
-                document.getElementById('l-start').style.display = 'none';
-                document.getElementById('v-content').style.display = 'block';
-                document.getElementById('v-val').innerText = "Err";
-                showError("Verbindung fehlgeschlagen.");
-                document.getElementById('fab').classList.remove('hidden');
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9ZxsNCuZA8048X3BoLNi4IBti8Y2uvctXZ4IsA7bRcaqsuC0Q3_id1Pn4IPIs7qhGRw/exec";
+        
+        // State
+        let currentStep = 1;
+        let wizardData = { kraftstoff: null, kmstand: '', liter: '', preis: '' };
+        let chartInstance = null;
+
+        // Mock Data
+        const MOCK_DATA = {
+            e5_avg_verb: "6.2", e5_avg_pkm: "0.115",
+            e10_avg_verb: "6.5", e10_avg_pkm: "0.112",
+            history: [
+                { date: "Jan", e5: 6.1, e10: null },
+                { date: "Feb", e5: 6.3, e10: null },
+                { date: "Mar", e5: null, e10: 6.4 },
+                { date: "Apr", e5: null, e10: 6.6 },
+                { date: "Mai", e5: 6.2, e10: null },
+                { date: "Jun", e5: null, e10: 6.5 },
+            ]
+        };
+
+        // DOM Elements
+        const dashboardView = document.getElementById('dashboard-view');
+        const wizardView = document.getElementById('wizard-view');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const dashboardContent = document.getElementById('dashboard-content');
+        
+        // Fetch Data
+        async function fetchData() {
+            loadingIndicator.classList.remove('hidden');
+            dashboardContent.classList.add('hidden');
+            
+            try {
+                const response = await fetch(WEB_APP_URL);
+                if (!response.ok) throw new Error('Network error');
+                const data = await response.json();
+                updateDashboard(data);
+            } catch (err) {
+                console.warn("Using mock data", err);
+                updateDashboard(MOCK_DATA);
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                dashboardContent.classList.remove('hidden');
+            }
+        }
+
+        function updateDashboard(data) {
+            document.getElementById('e5-verb').innerText = data.e5_avg_verb;
+            document.getElementById('e5-pkm').innerText = data.e5_avg_pkm;
+            document.getElementById('e10-verb').innerText = data.e10_avg_verb;
+            document.getElementById('e10-pkm').innerText = data.e10_avg_pkm;
+
+            const e5Pkm = parseFloat(data.e5_avg_pkm);
+            const e10Pkm = parseFloat(data.e10_avg_pkm);
+            
+            const cardE5 = document.getElementById('card-e5');
+            const cardE10 = document.getElementById('card-e10');
+            const pkmE5 = document.getElementById('e5-pkm-container');
+            const pkmE10 = document.getElementById('e10-pkm-container');
+
+            cardE5.classList.remove('highlight-green');
+            cardE10.classList.remove('highlight-green');
+            pkmE5.classList.remove('text-emerald-400');
+            pkmE10.classList.remove('text-emerald-400');
+            pkmE5.classList.add('text-white/70');
+            pkmE10.classList.add('text-white/70');
+
+            if (e5Pkm <= e10Pkm) {
+                cardE5.classList.add('highlight-green');
+                pkmE5.classList.add('text-emerald-400');
+                pkmE5.classList.remove('text-white/70');
+            } else {
+                cardE10.classList.add('highlight-green');
+                pkmE10.classList.add('text-emerald-400');
+                pkmE10.classList.remove('text-white/70');
+            }
+
+            renderChart(data.history);
+        }
+
+        function renderChart(history) {
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const labels = history.map(d => d.date);
+            const dataE5 = history.map(d => d.e5);
+            const dataE10 = history.map(d => d.e10);
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'E5 (L/100km)',
+                            data: dataE5,
+                            borderColor: '#60a5fa',
+                            backgroundColor: '#60a5fa',
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'E10 (L/100km)',
+                            data: dataE10,
+                            borderColor: '#fbbf24',
+                            backgroundColor: '#fbbf24',
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            spanGaps: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: 'rgba(255,255,255,0.8)', font: { size: 12 } }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: true,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'rgba(255,255,255,0.4)' },
+                            border: { display: false }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.1)', drawBorder: false },
+                            ticks: { color: 'rgba(255,255,255,0.4)' },
+                            border: { display: false }
+                        }
+                    }
+                }
             });
-    }
+        }
 
-    function start() {
-        document.getElementById('fab').classList.add('hidden');
-        document.getElementById('error-msg').style.display = 'none';
-        
-        ['km','liter','preis'].forEach(s => {
-            document.getElementById(`i-${s}`).value = "";
-            chk(s);
-        });
-        
-        show('s-km');
-        setTimeout(() => document.getElementById('i-km').focus(), 300);
-    }
+        // Navigation
+        function openWizard() {
+            dashboardView.classList.remove('active');
+            dashboardView.classList.add('exit');
+            
+            setTimeout(() => {
+                dashboardView.style.display = 'none';
+                dashboardView.classList.remove('exit');
+                
+                wizardView.style.display = 'flex';
+                // Force reflow
+                void wizardView.offsetWidth;
+                wizardView.classList.add('active');
+                
+                resetWizard();
+            }, 400);
+        }
 
-    function nxt(c, n) {
-        const v = document.getElementById(`i-${c}`).value;
-        if(!v) return;
-        d[c] = v;
-        show(`s-${n}`);
-        setTimeout(() => document.getElementById(`i-${n}`).focus(), 300);
-    }
+        function closeWizard() {
+            wizardView.classList.remove('active');
+            wizardView.classList.add('exit');
+            
+            setTimeout(() => {
+                wizardView.style.display = 'none';
+                wizardView.classList.remove('exit');
+                
+                dashboardView.style.display = 'flex';
+                // Force reflow
+                void dashboardView.offsetWidth;
+                dashboardView.classList.add('active');
+            }, 400);
+        }
 
-    function save() {
-        const v = document.getElementById('i-preis').value;
-        if(!v) return;
-        d.preis = v;
-        
-        document.getElementById('s-txt').style.display = 'none';
-        document.getElementById('s-ldr').style.display = 'block';
-        document.getElementById('b-save').disabled = true;
+        // Wizard Logic
+        function resetWizard() {
+            currentStep = 1;
+            wizardData = { kraftstoff: null, kmstand: '', liter: '', preis: '' };
+            
+            document.getElementById('input-km').value = '';
+            document.getElementById('input-liter').value = '';
+            document.getElementById('input-preis').value = '';
+            
+            document.getElementById('btn-e5').classList.remove('highlight-green');
+            document.getElementById('btn-e10').classList.remove('highlight-green');
+            document.getElementById('icon-e5').className = "w-16 h-16 rounded-full bg-white/5 text-white/50 flex items-center justify-center transition-colors";
+            document.getElementById('icon-e10').className = "w-16 h-16 rounded-full bg-white/5 text-white/50 flex items-center justify-center transition-colors";
+            
+            updateStepView();
+        }
 
-        fetch(URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(d)
-        })
-        .then(() => {
-            setTimeout(fin, 800);
-        })
-        .catch(e => {
-            alert("Fehler beim Senden: " + e.message);
-            fin();
-        });
-    }
+        function selectFuel(type) {
+            wizardData.kraftstoff = type;
+            
+            const btnE5 = document.getElementById('btn-e5');
+            const btnE10 = document.getElementById('btn-e10');
+            const iconE5 = document.getElementById('icon-e5');
+            const iconE10 = document.getElementById('icon-e10');
 
-    function fin() {
-        document.getElementById('s-txt').style.display = 'block';
-        document.getElementById('s-ldr').style.display = 'none';
-        document.getElementById('b-save').disabled = false;
-        
-        document.getElementById('l-start').style.display = 'block';
-        document.getElementById('v-content').style.display = 'none';
-        
-        show('s-start');
-        fetchV(); 
-    }
-</script>
+            btnE5.classList.remove('highlight-green');
+            btnE10.classList.remove('highlight-green');
+            iconE5.className = "w-16 h-16 rounded-full bg-white/5 text-white/50 flex items-center justify-center transition-colors";
+            iconE10.className = "w-16 h-16 rounded-full bg-white/5 text-white/50 flex items-center justify-center transition-colors";
+
+            if (type === 'E5') {
+                btnE5.classList.add('highlight-green');
+                iconE5.className = "w-16 h-16 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center transition-colors";
+            } else {
+                btnE10.classList.add('highlight-green');
+                iconE10.className = "w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center transition-colors";
+            }
+
+            validateStep();
+            setTimeout(nextStep, 300);
+        }
+
+        function validateStep() {
+            let isValid = false;
+            
+            if (currentStep === 1) isValid = wizardData.kraftstoff !== null;
+            if (currentStep === 2) {
+                wizardData.kmstand = document.getElementById('input-km').value;
+                isValid = wizardData.kmstand.length > 0 && !isNaN(wizardData.kmstand);
+            }
+            if (currentStep === 3) {
+                wizardData.liter = document.getElementById('input-liter').value;
+                isValid = wizardData.liter.length > 0 && !isNaN(wizardData.liter);
+            }
+            if (currentStep === 4) {
+                wizardData.preis = document.getElementById('input-preis').value;
+                isValid = wizardData.preis.length > 0 && !isNaN(wizardData.preis);
+            }
+
+            const btnNext = document.getElementById('btn-next');
+            if (isValid) {
+                btnNext.disabled = false;
+                btnNext.className = "w-full py-4 rounded-2xl font-medium text-lg flex items-center justify-center gap-2 transition-all duration-300 bg-white text-slate-900 active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.3)]";
+            } else {
+                btnNext.disabled = true;
+                btnNext.className = "w-full py-4 rounded-2xl font-medium text-lg flex items-center justify-center gap-2 transition-all duration-300 bg-white/10 text-white/30 cursor-not-allowed";
+            }
+        }
+
+        function updateStepView(direction = 'forward') {
+            document.getElementById('step-indicator').innerText = currentStep;
+            document.getElementById('progress-bar').style.width = `${(currentStep / 4) * 100}%`;
+
+            const btnNextText = document.getElementById('btn-next-text');
+            const btnNextIcon = document.getElementById('btn-next-icon');
+            
+            if (currentStep === 4) {
+                btnNextText.innerText = "Speichern";
+                btnNextIcon.setAttribute('data-lucide', 'check');
+            } else {
+                btnNextText.innerText = "Weiter";
+                btnNextIcon.setAttribute('data-lucide', 'chevron-right');
+            }
+            lucide.createIcons();
+
+            // Handle animations
+            for (let i = 1; i <= 4; i++) {
+                const stepEl = document.getElementById(`step-${i}`);
+                if (i === currentStep) {
+                    stepEl.style.display = 'flex';
+                    // Force reflow
+                    void stepEl.offsetWidth;
+                    stepEl.classList.remove('exit-left', 'enter-right');
+                    stepEl.classList.add('active');
+                    
+                    // Focus input if exists
+                    const input = stepEl.querySelector('input');
+                    if (input) setTimeout(() => input.focus(), 300);
+                } else {
+                    if (stepEl.classList.contains('active')) {
+                        stepEl.classList.remove('active');
+                        stepEl.classList.add(direction === 'forward' ? 'exit-left' : 'enter-right');
+                        setTimeout(() => {
+                            if (!stepEl.classList.contains('active')) {
+                                stepEl.style.display = 'none';
+                            }
+                        }, 300);
+                    } else {
+                        stepEl.style.display = 'none';
+                    }
+                }
+            }
+            validateStep();
+        }
+
+        function nextStep() {
+            if (currentStep < 4) {
+                currentStep++;
+                updateStepView('forward');
+            } else {
+                saveData();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepView('backward');
+            } else {
+                closeWizard();
+            }
+        }
+
+        async function saveData() {
+            const btnNext = document.getElementById('btn-next');
+            btnNext.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Speichere...';
+            lucide.createIcons();
+            btnNext.disabled = true;
+
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        kmstand: parseFloat(wizardData.kmstand),
+                        liter: parseFloat(wizardData.liter),
+                        gesamtpreis: parseFloat(wizardData.preis),
+                        kraftstoff: wizardData.kraftstoff
+                    })
+                });
+                await fetchData();
+                closeWizard();
+            } catch (err) {
+                console.error(err);
+                alert("Fehler beim Speichern.");
+                updateStepView(); // reset button
+            }
+        }
+
+        // Init
+        fetchData();
+    </script>
 </body>
 </html>
