@@ -328,8 +328,7 @@
 
             renderChart(data.history);
         }
-
-        function renderChart(history) {
+function renderChart(history) {
             const ctx = document.getElementById('historyChart').getContext('2d');
             
             if (chartInstance) {
@@ -337,8 +336,17 @@
             }
 
             const labels = history.map(d => d.date);
-            const dataE5 = history.map(d => d.e5);
-            const dataE10 = history.map(d => d.e10);
+            
+            // HIER WAR DER FEHLER: Wir müssen die echten Backend-Daten (d.typ und d.verbrauch) richtig auslesen
+            const dataE5 = history.map(d => {
+                if (d.e5 !== undefined) return d.e5; // Für die Mock-Daten
+                return d.typ === 'E5' ? d.verbrauch : null; // Für die echten Google Sheets Daten
+            });
+            
+            const dataE10 = history.map(d => {
+                if (d.e10 !== undefined) return d.e10;
+                return d.typ === 'E10' ? d.verbrauch : null;
+            });
 
             chartInstance = new Chart(ctx, {
                 type: 'line',
